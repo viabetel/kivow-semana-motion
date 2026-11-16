@@ -14,7 +14,7 @@ permissions:
 jobs:
   previas:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     defaults:
       run:
         working-directory: kivow-semana
@@ -46,13 +46,27 @@ jobs:
           PY
         env:
           SEL: ${{ inputs.previas }}
-      - name: Master e QA medido
+      - name: Master e QA medido (reprova o job se algum critério estourar)
+        id: qa
         run: python v9/qa/qa_previas.py
-      - name: Commit da entrega
+        env:
+          SEL: ${{ inputs.previas }}
+      - name: Prévias e relatórios como artefato (sempre, mesmo com falha)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kivow-v9.2-previas-${{ github.run_number }}
+          path: |
+            kivow-semana/entregas/v9.2/
+            kivow-semana/out/*.mp4
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Commit só dos relatórios (vídeo não entra no histórico)
+        if: always()
         working-directory: .
         run: |
           git config user.name "render-nuvem"
           git config user.email "render-nuvem@users.noreply.github.com"
-          git add kivow-semana/entregas/v9.2/
+          git add kivow-semana/entregas/v9.2/*.md kivow-semana/entregas/v9.2/*.json kivow-semana/entregas/v9.2/*_folha.jpg || true
           git commit -m "Entrega: Kivow Semana nova v9.2, prévias + QA medido (GitHub Actions)" || echo "nada novo"
           git pull --rebase -q && git push

@@ -28,7 +28,7 @@ export const Foto: React.FC<{ nome: string; r: Ret; prof?: number; op?: number; 
           <feDisplacementMap in="SourceGraphic" in2="m" scale={2 * prof} xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </defs>
-      <image href={staticFile(`v9/fotos/${nome}.jpg`)} x={r.x} y={r.y} width={r.w} height={r.h} preserveAspectRatio="none" filter={prof > 0.05 ? `url(#${id})` : undefined} />
+      <image href={staticFile(`v9/fotos/${nome}.jpg`)} x={r.x} y={r.y} width={r.w} height={r.h} preserveAspectRatio="none" filter={`url(#${id})`} />
     </svg>
   );
 };
@@ -45,7 +45,7 @@ export const Peca: React.FC<{ nome: string; x?: number; y: number; op?: number }
 );
 
 /** Celular: moldura real (1946 x 3088) com a tela em 483, 262 (980 x 2120, raio 150). O conteúdo vive em coordenadas da tela. */
-export const Celular: React.FC<{ c: Cel; tilt?: number; op?: number; topo?: number; abas?: number; children?: React.ReactNode }> = ({ c, tilt = 0, op = 1, topo = 1, abas = 1, children }) => {
+export const Celular: React.FC<{ c: Cel; tilt?: number; op?: number; topo?: number; abas?: number; children?: React.ReactNode; sobre?: React.ReactNode }> = ({ c, tilt = 0, op = 1, topo = 1, abas = 1, children, sobre }) => {
   if (op <= 0.001) return null;
   return (
     <div style={{ ...ABS, left: c.ox - 483 * c.s, top: c.oy - 262 * c.s, width: 1946 * c.s, height: 3088 * c.s, opacity: op, transform: `perspective(1400px) rotateX(${tilt}deg)`, transformOrigin: "50% 75%" }}>
@@ -54,6 +54,7 @@ export const Celular: React.FC<{ c: Cel; tilt?: number; op?: number; topo?: numb
           {children}
           {topo > 0 && <Peca nome="topo" y={0} op={topo} />}
           {abas > 0 && <Peca nome="abas" y={1873} op={abas} />}
+          {sobre}
         </div>
       </div>
       <Img src={staticFile("v9/figma/iphone.png")} style={{ ...ABS, left: 0, top: 0, width: "100%", height: "100%" }} />

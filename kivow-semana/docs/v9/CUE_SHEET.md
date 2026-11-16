@@ -3,6 +3,19 @@
 1080 x 1350 · 60 q/s · **50,2516 s (3015 quadros)**. Quadro = round(tempo x 60), arredondado UMA vez a partir do tempo absoluto.
 Fonte única no código: `src/v9/tempos.ts`. Este documento é a leitura humana dele.
 
+> **Revisão de 16/11 (V9.2.1), depois da primeira escuta das prévias.** O Nicácio achou o P2 "rápido pra caramba" e viu a notificação sumir. Duas mudanças:
+> 1. A notificação foi para cima do topo do app. Antes ficava escondida atrás dele.
+> 2. Foi inserido **um compasso de respiro (116 q = 1,9333 s)** no silêncio antes de "Na orla" (corte em 18,60 s da voz, silêncio digital). A notificação pousa em 20,25 s e fica **1,2 s legível antes da voz** e 1,2 s antes do toque. A faixa segue filtrada e abre no compasso 9 (21,219 s), junto do toque (21,459 s).
+>
+> Como o respiro é exatamente um compasso, tudo o que vem depois mantém a relação com a batida. **Na régua do filme, todos os tempos de cena depois de 18,60 s nesta tabela somam 1,9333 s.**
+> - Filme: **52,187 s (3131 q)**, terminando no compasso 25.
+> - SOS: q 2138 a 2318.
+> - "Baixe": 48,44 s.
+> - K: 48,31 s.
+> - Leitura do CTA: igual (3,35 s).
+>
+> No código, `noRoteiro()` e `noFilme()` (`src/v9/tempos.ts`) fazem a conversão. As cenas guardam a régua do roteiro.
+
 ## O que foi MEDIDO antes de cronometrar (nuvem, `v9/insumos/medidas/`)
 | Item | V9.1 (suposto) | V9.2 (medido) |
 |---|---|---|
@@ -115,4 +128,7 @@ Siglas: **VO** voz · **MU** música · **AM** ambiente · **UI** interface · *
 | 46,80 a 47,28 | 2808 a 2837 | | Alfabeto do K, um ícone por semicolcheia | UI 5 notas |
 | **46,90 a 50,25** | **2814 a 3015** | | **Leitura com tudo o que é essencial montado: 3,35 s.** Com o alfabeto inteiro: 2,97 s | MU −6 dB em 46,38; fade de 48,32 a 50,25 (2 compassos) |
 
-Os blocos fora das prévias (B4 a B6, meio do B8, B10) mantêm a coreografia da V9.1. As posições musicais deles serão travadas na mesma grade medida antes do filme inteiro.
+Os blocos entre as prévias também estão construídos no filme inteiro, a partir dos estados do Figma:
+- **B4 a B6 (8,20 a 18,45 s):** anéis nos check-ins, avatares voando em arco até o coração (13 a 17 curtidas) e conversa com realces e marcas volt. Na companhia, os avatares saem com rastro, se ligam, o pulso de luz corre no compasso 17,348 s, viram a foto dos dois e vem o mergulho casado.
+- **Meio do B8 (régua do roteiro, 27,0 a 29,95 s):** 4ª linha, "recomeça" e "chance" com a linha volt até o topo e "12 s do topo".
+- **B10 (37,35 a 41,90 s):** recorte dos atletas sai do feed, anel no André, Caio segue, os cartões se atraem e pousam no post deles.

@@ -4,7 +4,7 @@
 // com troca de dono em um quadro em que as duas geometrias são idênticas (QA mede o erro: 0 px).
 import React from "react";
 import { AbsoluteFill, continueRender, delayRender, staticFile, useCurrentFrame } from "remotion";
-import { C, FPS, P } from "./tempos";
+import { C, FPS, P, S, noRoteiro } from "./tempos";
 import { Cel, E, Ret, cl, doFigma, mergulho, mix, mixCel, mixRet, mola, naTela, prog, trilha, zoomRet } from "./mov";
 import { ABS, COR, CartaoTreino, Celular, Foto, FotoNaCaixa, INTER, Linha, Peca, SOFIA, Sombra, Sticker, SvgFigma, Toque } from "./Pecas";
 import { Som } from "./Som";
@@ -40,6 +40,8 @@ const FOTO_MARCOS = { x: -60.5, y: -161.5, w: 880, h: 1100 };
 // cartão do trecho dentro do post do Diego (tela) e fora
 const TRECHO_TELA = { x: 61, y: 243 + 742, w: 850, h: 395 };
 const TRECHO_FORA = { x: 88, y: 640, w: 904, h: 420 };
+/** deriva do palco do desafio: 4 px/s para a esquerda entre 20,6 e 24,6 s (regra: ≤ 6 px/s no essencial) */
+const derivaDes = (t: number) => -4 * cl(t - 20.6, 0, 4);
 
 const t_ = (f: number) => f / FPS;
 const cheia = (nome: string, z: number, op = 1, prof = 0) => <Foto nome={nome} r={zoomRet((G as Record<string, Ret>)[nome], z)} op={op} prof={prof} />;
@@ -67,10 +69,22 @@ export const Palco: React.FC = () => {
   const t = t_(f);
   return (
     <AbsoluteFill style={{ background: COR.tinta, overflow: "hidden" }}>
-      {t < 8.6 && <P1 f={f} />}
-      {t >= 18.3 && t < 27.4 && <P2 f={f} />}
-      {t >= 29.5 && t < 37.8 && <P3 f={f} />}
-      {t >= 41.9 && <P4 f={f} />}
+      {t < 8.2 && <P1 f={f} />}
+      {t >= 8.2 && t < 18.45 && <B456 f={f} />}
+      {t >= 18.45 && t < 21.4 && <P2abre f={f} />}
+      {(() => {
+        const fo = noRoteiro(f), to = t_(fo); // depois do respiro (21,40 s), a coreografia segue a régua do roteiro
+        if (t < 21.4) return null;
+        return (
+          <>
+            {to < C.mergulhoOrla && <P2 f={fo} />}
+            {to >= C.mergulhoOrla && to < 30.5 && <Orla f={fo} />}
+            {to >= 29.8 && to < 37.35 && <P3 f={fo} />}
+            {to >= 37.35 && to < 41.9 && <Desc f={fo} />}
+            {to >= 41.9 && <P4 f={fo} />}
+          </>
+        );
+      })()}
       <Som />
     </AbsoluteFill>
   );
@@ -195,7 +209,7 @@ const Portal: React.FC<{ r: Ret; z: number; t: number }> = ({ r, z, t }) => {
 // ===================== P2 · desafio e recorde (18,3 a 27,4 s) =====================
 const celularP2 = (f: number) => {
   const t = t_(f);
-  const a = sobe(f, 18.75, { s: 0.5, cy: 1880 }, CEL.des2, 6);
+  const a = { c: CEL.des2, tilt: 0 };
   if (t < P.diego) return a;
   if (t < 24.95) return { c: mixCel(a.c, CEL.post, E.ioC(prog(f, P.diego, P.diego + 0.36))), tilt: 0 };
   return { c: mergulho(CEL.post, MERG_ORLA, E.mergulho(prog(f, 24.95, C.mergulhoOrla))), tilt: 0 };
@@ -205,61 +219,73 @@ const P2: React.FC<{ f: number }> = ({ f }) => {
   const { c: cel, tilt } = celularP2(f);
   const dentroOrla = t >= C.mergulhoOrla;
   const opCel = t < P.melhor ? 1 : t < 24.55 ? 1 - prog(f, P.melhor, P.melhor + 0.3) : prog(f, 24.55, 24.85);
-  const notifY = mix(-260, 121.1, mola(f, 19.03, 0.75, 12)) - 140 * E.ioC(prog(f, P.diego - 0.02, P.diego + 0.18));
+  const notifY = 121.1 - 140 * E.ioC(prog(f, P.diego - 0.02, P.diego + 0.18));
   const afunda = 1 - 0.03 * (prog(f, C.toque, C.toque + 0.1) - prog(f, C.toque + 0.12, C.toque + 0.22));
   const push = E.ioC(prog(f, P.diego, P.diego + 0.3));
   // cartão do trecho: sai do post em P.melhor, volta em 24,60
   const dentro = naTela(cel, TRECHO_TELA);
-  const cartaoNoPalco = t >= P.melhor && t < 24.95;
-  const rT = t < 24.6 ? mixRet(dentro, TRECHO_FORA, E.ioC(prog(f, P.melhor, P.melhor + 0.34))) : mixRet(TRECHO_FORA, dentro, E.ioC(prog(f, 24.6, 24.95)));
+  const cartaoNoPalco = t >= P.melhor && t < 25.2; // depois de pousar, o painel apaga antes do mergulho (24,95 a 25,20)
+  const foraD = { ...TRECHO_FORA, x: TRECHO_FORA.x + derivaDes(t) };
+  const rT = t < 24.6 ? mixRet(dentro, foraD, E.ioC(prog(f, P.melhor, P.melhor + 0.34))) : t < 24.95 ? mixRet(foraD, dentro, E.ioC(prog(f, 24.6, 24.95))) : dentro;
   const furo = t >= P.melhor && t < C.mergulhoOrla; // foto limpa casada no lugar da foto do post
-  const zJ = trilha(f, [[18.45, 1.02], [19.5, 1.04, E.lin], [20.6, 1.05, E.lin]]);
-  const zO = trilha(f, [[C.mergulhoOrla, 1], [29.9, 1.04, E.ioC]]);
+  const zJ = trilha(f, [[19.4667, 1.04], [20.6, 1.05, E.ioC]]);
   const fundoJ = 1 - prog(f, P.melhor, P.melhor + 0.3);
-  const rk = mola(f, 26.3, 0.8, 14);
-  const sticker = !dentroOrla ? null : <Sticker p="sticker_orla" x={102} y={860} t={t - 25.62} op={mix(1, 0.3, prog(f, 26.3, 26.6))} dy={-80 * E.ioC(prog(f, 26.3, 26.6))} />;
   return (
     <>
-      {!dentroOrla && fundoJ > 0 && cheia("juntos", zJ, fundoJ, 6 * prog(f, 18.3, 19.5))}
-      {!dentroOrla && <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: 0.5 * prog(f, 18.75, 19.2) * fundoJ }} />}
-      {!dentroOrla && t < 19.0 && (
-        <>
-          <Sombra y={650} h={700} op={1 - prog(f, 18.75, 19.0)} />
-          <Sticker p="sticker_juntos" x={102} y={840} t={9} op={1 - prog(f, 18.75, 19.0)} />
-        </>
-      )}
-      {dentroOrla && cheia("orla", zO, 1, 7 * prog(f, C.mergulhoOrla, 27))}
-      {dentroOrla && <Sombra y={650} h={700} op={1} />}
-      {sticker}
-      {t >= 18.75 && !dentroOrla && (
-        <Celular c={cel} tilt={tilt} op={opCel}>
-          {t < P.diego + 0.3 && <Peca nome="juntos" x={-980 * push} y={349} />}
-          {t >= P.diego && <Peca nome="diego" x={980 * (1 - push)} y={243} />}
-          {t >= P.diego + 0.3 && t < P.melhor + 0.4 && <Brilho t={t - (P.diego + 0.32)} />}
-          {furo && <FotoNaCaixa nome="orla" caixa={SLOT_DIEGO} foto={{ ...FOTO_DIEGO, x: FOTO_DIEGO.x - SLOT_DIEGO.x, y: FOTO_DIEGO.y - SLOT_DIEGO.y }} raio={mix(22, 0, prog(f, 25.1, C.mergulhoOrla))} />}
+      {!dentroOrla && fundoJ > 0 && cheia("juntos", zJ, fundoJ, 6)}
+      {!dentroOrla && <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: 0.5 * fundoJ }} />}
+      {!dentroOrla && (
+        <Celular c={cel} tilt={tilt} op={opCel} sobre={<>
           {t < P.diego + 0.2 && (
             <img src={staticFile("v9/figma/notificacao.png")} style={{ ...ABS, left: 42.2, top: notifY, width: 896.9, height: 213.4, transform: `scale(${afunda})`, transformOrigin: "50% 50%", opacity: 1 - prog(f, P.diego, P.diego + 0.18), filter: "drop-shadow(0 18px 30px rgba(0,0,0,0.18))" }} />
           )}
           <Toque cx={855} cy={345} t={t - C.toque} />
+        </>}>
+          {t < P.diego + 0.3 && <Peca nome="juntos" x={-980 * push} y={349} />}
+          {t >= P.diego && <Peca nome="diego" x={980 * (1 - push)} y={243} />}
+          {t >= P.diego + 0.3 && t < P.melhor + 0.4 && <Brilho t={t - (P.diego + 0.32)} />}
+          {furo && <FotoNaCaixa nome="orla" caixa={SLOT_DIEGO} foto={{ ...FOTO_DIEGO, x: FOTO_DIEGO.x - SLOT_DIEGO.x, y: FOTO_DIEGO.y - SLOT_DIEGO.y }} raio={mix(22, 0, prog(f, 25.1, C.mergulhoOrla))} />}
         </Celular>
       )}
       {cartaoNoPalco && <Numeros f={f} />}
-      {cartaoNoPalco && <CartaoTrecho f={f} r={rT} />}
-      {t >= 26.25 && (
-        <div style={{ ...ABS, left: 72, top: 740, width: 936, height: 600, transform: `translateY(${(1 - rk) * 60}px) scale(${mix(0.94, 1, rk)})`, opacity: cl(rk * 1.4) }}>
+      {cartaoNoPalco && <div style={{ opacity: 1 - prog(f, 24.95, 25.2) }}><CartaoTrecho f={f} r={rT} /></div>}
+    </>
+  );
+};
+/** ranking da orla (RK_04 do Figma, 4 linhas): linhas a cada colcheia, "recomeça" acende o mês, "chance" acende você e a linha sobe ao topo */
+const rankingCss = (f: number) => {
+  const linha = (id: string, t0: number, op = 1) => {
+    const p = E.oC(prog(f, t0, t0 + 0.22));
+    return `#ranking4__${id}{opacity:${p * op};transform:translateY(${(1 - p) * 26}px)}`;
+  };
+  const ch = prog(f, 28.26, 28.56);
+  return linha("linha-diego-matos", 26.3) + linha("linha-rafael-nunes", 26.3 + 0.2419) + linha("linha-voce", 26.3 + 0.4839, mix(0.5, 1, ch)) + linha("linha-caio-reis", 26.3 + 0.7258) + linha("mes-que-zera", 26.42)
+    + `#ranking4__linha-voce{filter:grayscale(${1 - ch})}`
+    + `#ranking4__linha-volt-do-seu-lugar-ao-topo{transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(${E.ioC(prog(f, 28.3, 28.7))})}`
+    + `#ranking4__12-s-do-topo{transform-box:fill-box;transform-origin:center;transform:scale(${Math.max(0, mola(f, 28.62, 0.6, 16))})}`;
+};
+/** a orla por dentro: sticker 8,00 km, ranking em vidro (26,30 a 29,95) */
+const Orla: React.FC<{ f: number }> = ({ f }) => {
+  const t = t_(f);
+  const zO = trilha(f, [[C.mergulhoOrla, 1], [29.9, 1.04, E.ioC], [30.5, 1.045, E.lin]]);
+  const rk = mola(f, 26.3, 0.8, 14);
+  const sobePainel = E.ioC(prog(f, 26.95, 27.3)); // a 4ª linha entra e o painel sobe 50 px
+  const desce = E.ioC(prog(f, 29.6, 29.95));
+  const anelMes = prog(f, P.recomeca, P.recomeca + 0.5);
+  return (
+    <>
+      {cheia("orla", zO, 1, 7 * prog(f, C.mergulhoOrla, 27))}
+      <Sombra y={650} h={700} op={1} />
+      <Sticker p="sticker_orla" x={102} y={860} t={t - 25.62} op={mix(1, 0.3, prog(f, 26.3, 26.6))} dy={-80 * E.ioC(prog(f, 26.3, 26.6))} />
+      {t >= 26.25 && desce < 1 && (
+        <div style={{ ...ABS, left: 72, top: 740 - 50 * sobePainel + 700 * desce, width: 936, height: 600, transform: `translateY(${(1 - rk) * 60}px) scale(${mix(0.94, 1, rk)})`, opacity: cl(rk * 1.4) * (1 - desce) }}>
           <div style={{ ...ABS, inset: 0, borderRadius: 40, backdropFilter: "blur(15px)", WebkitBackdropFilter: "blur(15px)" }} />
-          <SvgFigma p="ranking" x={0} y={0} css={rankingCss(f)} />
+          <SvgFigma p="ranking4" x={0} y={0} css={rankingCss(f)} />
+          {anelMes > 0 && anelMes < 1 && <div style={{ ...ABS, left: 44, top: 112, width: 439, height: 56, borderRadius: 28, border: `3px solid ${COR.volt}`, transform: `scale(${1 + 0.06 * anelMes})`, opacity: 1 - anelMes }} />}
         </div>
       )}
     </>
   );
-};
-const rankingCss = (f: number) => {
-  const linha = (id: string, t0: number, op = 1) => {
-    const p = E.oC(prog(f, t0, t0 + 0.22));
-    return `#ranking__${id}{opacity:${p * op};transform:translateY(${(1 - p) * 26}px)}`;
-  };
-  return linha("linha-diego-matos", 26.3) + linha("linha-rafael-nunes", 26.3 + 0.2419) + linha("linha-voce", 26.3 + 0.4839) + linha("mes-que-zera", 26.42);
 };
 const Brilho: React.FC<{ t: number }> = ({ t }) => {
   if (t < 0 || t > 0.5) return null;
@@ -319,7 +345,7 @@ const Numeros: React.FC<{ f: number }> = ({ f }) => {
   const leg = (txt: React.ReactNode, x: number, y: number, a: number, cor = "rgba(242,239,230,0.8)") =>
     a <= 0 ? null : <div style={{ ...ABS, left: x, top: y, fontFamily: INTER, fontWeight: 500, fontSize: 34, lineHeight: "41px", color: cor, opacity: a, whiteSpace: "nowrap" }}>{txt}</div>;
   return (
-    <div style={{ ...ABS, inset: 0, opacity: sai, transform: `translateX(${treme}px)` }}>
+    <div style={{ ...ABS, inset: 0, opacity: sai, transform: `translateX(${treme + derivaDes(t)}px)` }}>
       {!impacto && (
         <>
           <Linha txt="3:58" x={88} y={mix(250, 300, enc)} tam={mix(240, 150, enc)} alt={mix(288, 180, enc)} p={n358} />
@@ -346,8 +372,7 @@ const P3: React.FC<{ f: number }> = ({ f }) => {
   const t = t_(f);
   // a linha do K a 58° varre da esquerda para a direita abrindo o parque
   const x0 = mix(-900, 1120, E.ioC(prog(f, 29.8, 30.5)));
-  const mascara = `polygon(-2000px 0px, ${x0 + 844}px 0px, ${x0}px 1350px, -2000px 1350px)`;
-  const zO = trilha(f, [[25.57, 1], [29.9, 1.04, E.lin], [30.5, 1.045, E.lin]]);
+  const mascara = t >= 30.5 ? "polygon(-2000px -2000px, 4000px -2000px, 4000px 4000px, -2000px 4000px)" : `polygon(-2000px 0px, ${x0 + 844}px 0px, ${x0}px 1350px, -2000px 1350px)`;
   const zP = trilha(f, [[29.8, 1], [31.6, 1.0198, E.lin], [32.5, 1.03, E.lin], [33.6, 1.04, E.lin], [37.8, 1.05, E.lin]]);
   const sobeCel = sobe(f, 32.3, { s: 0.3, cy: 1668 }, CEL.cui3, 5.2);
   const cel = t < P.oKivowCuida ? sobeCel.c : mixCel(CEL.cui3, CEL.cui, E.ioC(prog(f, P.oKivowCuida, P.oKivowCuida + 0.34)));
@@ -357,18 +382,11 @@ const P3: React.FC<{ f: number }> = ({ f }) => {
   const folhaY = t < 37 ? mix(2120, 520, mola(f, P.oKivowCuida, 0.85, 13)) : mix(520, 2120, E.ioC(prog(f, 37, 37.35)));
   const btn = (f >= 2022 && f < 2202 ? mix(1.028, 1, E.oC(prog(f, 33.7, 33.8))) : mix(1, 1.028, mola(f, C.sosFim, 0.55, 18)));
   const contatos = [prog(f, P.quem, P.quem + 0.12), prog(f, P.quem + 0.12, P.quem + 0.24)];
-  const rankDesce = E.ioC(prog(f, 29.6, 29.95));
-  const camZ = 1 + 0.02 * foco;
+  const camZ = 1 + 0.02 * E.ioC(prog(f, 33.6, C.sosFim)) * (1 - E.ioC(prog(f, C.sosFim, C.sosFim + 0.3)));
   const btnG = naTela(cel, { x: 416 / 0.85, y: 520 + 518 / 0.85, w: 0, h: 0 });
   return (
     <div style={{ ...ABS, inset: 0, transform: `scale(${camZ})`, transformOrigin: `${btnG.x}px ${btnG.y}px` }}>
-      {t < 30.5 && cheia("orla", zO, 1, 7)}
-      {t < 29.95 && (
-        <div style={{ ...ABS, left: 72, top: 740 + 700 * rankDesce, width: 936, height: 600, opacity: 1 - rankDesce }}>
-          <SvgFigma p="ranking" x={0} y={0} css="#ranking__linha-voce{opacity:1}" />
-        </div>
-      )}
-      <div style={{ ...ABS, inset: 0, clipPath: t < 30.5 ? mascara : undefined }}>{cheia("parque", zP, 1, 6 * prog(f, 30.5, 32.5))}</div>
+      <div style={{ ...ABS, inset: 0, clipPath: mascara }}>{cheia("parque", zP, 1, 6 * prog(f, 30.5, 32.5))}</div>
       {t >= 29.8 && t < 30.55 && (
         <svg width={1080} height={1350} style={{ ...ABS, left: 0, top: 0 }}>
           <line x1={x0 + 844} y1={-10} x2={x0} y2={1360} stroke={COR.volt} strokeWidth={12} />
@@ -376,7 +394,7 @@ const P3: React.FC<{ f: number }> = ({ f }) => {
       )}
       {t >= 30.5 && t < 32.6 && (
         <>
-          <Sombra y={650} h={700} op={1 - prog(f, 32.3, 32.55)} />
+          <Sombra y={650} h={700} op={prog(f, 30.45, 30.75) * (1 - prog(f, 32.3, 32.55))} />
           <Sticker p="sticker_parque" x={102} y={860} t={t - 30.6} ate={E.oC(prog(f, 30.6, 31.6)) * 0.62} op={1 - prog(f, 32.3, 32.55)} />
         </>
       )}
@@ -511,4 +529,294 @@ const usePreload = () => {
     Promise.all(PRE.map((p) => new Promise<void>((ok) => { const i = new Image(); i.onload = () => i.decode().then(() => ok(), () => ok()); i.onerror = () => ok(); i.src = staticFile(p); })))
       .then(() => continueRender(h));
   }, [h]);
+};
+
+// ===================== B4 a B6 · região, conversa e companhia (8,20 a 18,45 s) =====================
+const V = (oy: number): Cel => ({ ox: 50, oy, s: 1 });
+const FOTO_JUNTOS = { x: -233, y: 557.5, w: 1458, h: 820 }; // casamento 0,94 com a foto original (o painel do post fica por cima)
+const MERG_JUNTOS = alvo(FOTO_JUNTOS, G.juntos);
+const ANEIS = [280, 468, 657, 845].map((x) => ({ x, y: 327 }));
+const CORACAO = { x: 193.5, y: 1609.5 };
+const compasso7 = 3.8 + 28 * 0.4838725774422903; // 17,348 s: o pulso de luz corre a ligação no compasso
+const celB456 = (f: number): Cel => {
+  const t = t_(f);
+  if (t < 8.6) return mixCel(CEL.met, V(87), E.ioC(prog(f, 8.2, 8.6)));
+  if (t < 16.4) return V(trilha(f, [[8.6, 87], [9.0, 87], [10.2, -623, E.ioC], [10.4, -623], [10.8, -673, E.ioC], [11.4, -673], [12.3, -770, E.ioC]]));
+  if (t < 17.85) return mixCel(V(-770), V(-223), E.ioC(prog(f, 16.4, 16.8)));
+  return mergulho(V(-223), MERG_JUNTOS, E.mergulho(prog(f, 17.85, 18.45)));
+};
+/** avatar redondo recortado da própria camada do feed (nada inventado) */
+const Avatar: React.FC<{ peca: string; lx: number; ly: number; d: number; cx: number; cy: number; tam: number; op?: number }> = ({ peca, lx, ly, d, cx, cy, tam, op = 1 }) => {
+  const k = tam / d;
+  return (
+    <div style={{ ...ABS, left: cx - tam / 2, top: cy - tam / 2, width: tam, height: tam, borderRadius: tam / 2, overflow: "hidden", opacity: op, boxShadow: "0 10px 28px rgba(0,0,0,0.28)" }}>
+      <img src={staticFile(`v9/figma/${peca}.png`)} style={{ ...ABS, left: -lx * k, top: -ly * k, width: 975 * k, maxWidth: "none" }} />
+    </div>
+  );
+};
+type Pt = { x: number; y: number };
+const bez = (a: Pt, c: Pt, b: Pt, p: number): Pt => ({
+  x: (1 - p) * (1 - p) * a.x + 2 * (1 - p) * p * c.x + p * p * b.x,
+  y: (1 - p) * (1 - p) * a.y + 2 * (1 - p) * p * c.y + p * p * b.y,
+});
+const NUM: React.CSSProperties = { ...ABS, left: 5, top: 3, fontFamily: INTER, fontSize: 30, lineHeight: "36px", color: "#40454D" };
+/** o post do Marcos chega a 17 curtidas (tabela da v9): 13 até os corredores da região pousarem, um a um */
+const Curtidas: React.FC<{ f: number }> = ({ f }) => {
+  const t = t_(f);
+  const n = 13 + [0, 1, 2, 3].filter((k) => t >= 9.8 + 0.09 * k).length;
+  const cheio = t >= P.veem;
+  return (
+    <>
+      {!cheio && <div style={{ ...ABS, left: 224, top: 1588, width: 44, height: 42, background: "#fff" }}><span style={NUM}>{n}</span></div>}
+      {cheio && (
+        <>
+          <div style={{ ...ABS, left: 168, top: 1584, width: 52, height: 52, background: "#fff" }} />
+          <img src={staticFile("v9/figma/coracao.png")} style={{ ...ABS, left: 170, top: 1586, width: 47, height: 47, transform: `scale(${mola(f, P.veem, 0.5, 18)})` }} />
+          {[0, 1].map((k) => {
+            const p = prog(f, P.veem + 0.1 * k, P.veem + 0.1 * k + 0.6);
+            return p > 0 && p < 1 ? <img key={k} src={staticFile("v9/figma/mais1.png")} style={{ ...ABS, left: 450 + 110 * k, top: 1584 - 50 * E.oC(p), width: 84, height: 61, opacity: 1 - p * p }} /> : null;
+          })}
+        </>
+      )}
+      {t >= P.fez + 0.06 && (
+        <div style={{ ...ABS, left: 380, top: 1588, width: 30, height: 42, background: "#fff" }}>
+          <span style={{ ...NUM, display: "inline-block", transform: `scale(${mola(f, P.fez + 0.06, 0.5, 18)})` }}>1</span>
+        </div>
+      )}
+    </>
+  );
+};
+const B456: React.FC<{ f: number }> = ({ f }) => {
+  const t = t_(f);
+  const cel = celB456(f);
+  const scroll = trilha(f, [[11.4, 0], [12.3, 276, E.ioC], [13.82, 276], [14.12, 594, E.ioC], [14.92, 594], [15.22, 912, E.ioC]]);
+  const novo = E.oC(prog(f, 16.4, 16.8)); // o post de Marcos e Rafael chega
+  const zPista = trilha(f, [[5.9, 1.05], [8.6, 1.058, E.lin], [12.6, 1.07, E.lin]]);
+  const realce = (y: number, t0: number) => {
+    const a = prog(f, t0, t0 + 0.15) * (1 - prog(f, t0 + 0.15, t0 + 0.75));
+    return a > 0 ? <div style={{ ...ABS, left: 0, top: y, width: 980, height: 318, background: COR.volt, opacity: 0.14 * a }} /> : null;
+  };
+  const marca = (x: number, y: number, w: number, t0: number) => {
+    const p = E.oC(prog(f, t0, t0 + 0.2));
+    return p > 0 ? <div style={{ ...ABS, left: x, top: y, width: w * p, height: 48, borderRadius: 8, background: COR.volt, mixBlendMode: "multiply" }} /> : null;
+  };
+  // companhia: os dois avatares saem da conversa, se ligam e viram a foto dos dois
+  const voo = [
+    { peca: "rafael", de: { x: 97, y: 2049 }, para: { x: 400, y: 500 }, t0: P.oTreino, ctrl: { x: -120, y: -260 }, foto: { x: 525, y: 880 } },
+    { peca: "marcosR", de: { x: 97, y: 2366 }, para: { x: 640, y: 640 }, t0: P.oTreino + 0.06, ctrl: { x: 260, y: -120 }, foto: { x: 379, y: 880 } },
+  ];
+  const zFoto = trilha(f, [[16.4, 2], [P.vira, 2], [P.vira + 0.4, 1, E.ioC]]);
+  const fotoJ = { x: 379 - (379 - FOTO_JUNTOS.x) * zFoto, y: 885.5 - (885.5 - FOTO_JUNTOS.y) * zFoto, w: FOTO_JUNTOS.w * zFoto, h: FOTO_JUNTOS.h * zFoto };
+  const toqueBruno = naTela(cel, { x: 193.5, y: 1919.5 - scroll, w: 0, h: 0 });
+  return (
+    <>
+      {t < 12.6 && cheia("pista", zPista, 1, 7)}
+      <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: mix(0.45, 1, prog(f, 12.3, 12.6)) }} />
+      <Celular c={cel}>
+        {novo < 1 && (
+          <div style={{ ...ABS, left: 0, top: -scroll - 300 * novo, width: 980, height: 2700, opacity: 1 - novo }}>
+            <Peca nome="checkins" y={243} />
+            <Peca nome="marcos" y={528.4} />
+            <Peca nome="bruno" y={1658} />
+            <Peca nome="rafael" y={1976} />
+            <Peca nome="marcosR" y={2293} />
+            <Curtidas f={f} />
+            {ANEIS.map((a, k) => {
+              const p = E.oC(prog(f, P.outros + 0.09 * k, P.outros + 0.09 * k + 0.2));
+              return p > 0 ? <div key={k} style={{ ...ABS, left: a.x - 34, top: a.y - 34, width: 68, height: 68, borderRadius: 34, border: `6px solid ${COR.volt}`, boxSizing: "border-box", transform: `scale(${mix(1.3, 1, p)})`, opacity: p * (1 - prog(f, 9.0 + 0.09 * k, 9.2 + 0.09 * k)) }} /> : null;
+            })}
+            {t >= P.interagem && (
+              <>
+                <div style={{ ...ABS, left: 168, top: 1894, width: 85, height: 50, background: "#fff" }} />
+                <img src={staticFile("v9/figma/coracao.png")} style={{ ...ABS, left: 170, top: 1896, width: 47, height: 47, transform: `scale(${mola(f, P.interagem, 0.5, 18)})` }} />
+                <span style={{ ...NUM, left: 228, top: 1898 }}>5</span>
+              </>
+            )}
+            {realce(1658, P.comentam)}
+            {realce(1976, P.combinam)}
+            {realce(2293, P.comVoce)}
+            {marca(388, 2132, 58, 14.1)}
+            {marca(323, 2450, 52, P.comVoce + 0.1)}
+            {t >= P.comVoce + 0.1 && <div style={{ ...ABS, left: 94, top: 2097, width: 6, height: 222 * E.ioC(prog(f, P.comVoce + 0.1, P.comVoce + 0.4)), background: COR.volt }} />}
+            {voo.map((v, i) => (t >= v.t0 ? <div key={i} style={{ ...ABS, left: v.de.x - 51, top: v.de.y - 51, width: 102, height: 102, borderRadius: 51, background: "#fff" }} /> : null))}
+            <div style={{ ...ABS, left: 0, top: 243, width: 980, height: 2400, background: "#fff", opacity: 0.6 * prog(f, P.oTreino, P.oTreino + 0.3) }} />
+          </div>
+        )}
+        {t >= 16.4 && (
+          <div style={{ ...ABS, left: 0, top: 500 * (1 - novo), width: 980, height: 1600, opacity: cl(novo * 1.5) }}>
+            <Peca nome="juntos" y={243} />
+            <FotoNaCaixa nome="juntos" caixa={SLOT_DUO} foto={{ ...fotoJ, x: fotoJ.x - SLOT_DUO.x, y: fotoJ.y - SLOT_DUO.y }} raio={mix(22, 0, prog(f, 18.0, 18.45))} />
+            <div style={{ ...ABS, left: 398, top: 265, width: 540, height: 52, background: "#fff", opacity: 1 - prog(f, P.vira, P.vira + 0.25) }} />
+            <div style={{ ...ABS, left: 160, top: 319, width: 780, height: 48, background: "#fff", opacity: 1 - prog(f, P.vira + 0.08, P.vira + 0.33) }} />
+          </div>
+        )}
+        {t < 12.0 && <Toque cx={352} cy={1609} t={t - P.fez} />}
+      </Celular>
+      {t >= P.interagem - 0.1 && t < P.interagem + 0.6 && <Toque cx={toqueBruno.x} cy={toqueBruno.y} t={t - P.interagem} />}
+      {/* corredores da região voam até o coração, em arcos diferentes, com a câmera descendo junto */}
+      {[0, 1, 2, 3].map((k) => {
+        const t0 = 9.0 + 0.09 * k, p = prog(f, t0, t0 + 0.8);
+        if (p <= 0 || p >= 1) return null;
+        const a = naTela(cel, { ...ANEIS[k], w: 0, h: 0 }), b = naTela(cel, { ...CORACAO, w: 0, h: 0 });
+        const q = E.ioC(p), pos = bez(a, { x: (a.x + b.x) / 2 + 320 + 40 * k, y: (a.y + b.y) / 2 - 160 }, b, q);
+        return <Avatar key={k} peca="checkins" lx={ANEIS[k].x - 30} ly={ANEIS[k].y - 243 - 30} d={60} cx={pos.x} cy={pos.y} tam={mix(60, 34, q) + 46 * Math.sin(Math.PI * q)} op={1 - prog(f, t0 + 0.72, t0 + 0.8)} />;
+      })}
+      {voo.map((v, i) => {
+        if (t < v.t0 || t > P.vira + 0.4) return null;
+        const p = E.ioC(prog(f, v.t0, v.t0 + 0.42));
+        const a = naTela(cel, { x: v.de.x, y: v.de.y - scroll, w: 0, h: 0 });
+        const vira = E.ioC(prog(f, P.vira, P.vira + 0.35));
+        const g = naTela(cel, { x: v.foto.x, y: v.foto.y + 500 * (1 - novo), w: 0, h: 0 });
+        const ctrl = { x: (a.x + v.para.x) / 2 + v.ctrl.x, y: (a.y + v.para.y) / 2 + v.ctrl.y };
+        const pos = p < 1 ? bez(a, ctrl, v.para, p) : { x: mix(v.para.x, g.x, vira), y: mix(v.para.y, g.y, vira) };
+        const tam = t < P.vira ? mix(96, 230, p) : mix(230, 70, vira);
+        const op = 1 - prog(f, P.vira + 0.2, P.vira + 0.4);
+        const rastro = p > 0 && p < 1 ? Array.from({ length: 10 }, (_, j) => bez(a, ctrl, v.para, Math.max(0, p - 0.04 * j))) : [];
+        const anel = prog(f, v.t0 + 0.42, v.t0 + 0.72) * (1 - prog(f, P.vira, P.vira + 0.15));
+        return (
+          <React.Fragment key={i}>
+            {rastro.length > 1 && (
+              <svg width={1080} height={1350} style={{ ...ABS, left: 0, top: 0 }}>
+                <polyline points={rastro.map((r) => `${r.x},${r.y}`).join(" ")} fill="none" stroke={COR.volt} strokeWidth={2} opacity={0.8} />
+              </svg>
+            )}
+            <Avatar peca={v.peca} lx={49} ly={25} d={96} cx={pos.x} cy={pos.y} tam={tam} op={op} />
+            {anel > 0 && (
+              <svg width={1080} height={1350} style={{ ...ABS, left: 0, top: 0 }}>
+                <circle cx={pos.x} cy={pos.y} r={123} fill="none" stroke={COR.volt} strokeWidth={8} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - Math.min(1, anel * 1.5)} opacity={Math.min(1, anel * 3)} transform={`rotate(-90 ${pos.x} ${pos.y})`} />
+              </svg>
+            )}
+          </React.Fragment>
+        );
+      })}
+      {t >= P.oTreino + 0.75 && t < P.vira + 0.15 && (() => {
+        const lig = E.ioC(prog(f, P.oTreino + 0.75, P.oTreino + 0.95)), pulso = prog(f, compasso7, compasso7 + 0.3);
+        const x1 = 400, y1 = 500, x2 = 640, y2 = 640;
+        return (
+          <svg width={1080} height={1350} style={{ ...ABS, left: 0, top: 0, opacity: 1 - prog(f, P.vira, P.vira + 0.15) }}>
+            <line x1={x1} y1={y1} x2={mix(x1, x2, lig)} y2={mix(y1, y2, lig)} stroke={COR.volt} strokeWidth={3} />
+            {pulso > 0 && pulso < 1 && <circle cx={mix(x1, x2, pulso)} cy={mix(y1, y2, pulso)} r={10} fill="#fff" style={{ filter: `drop-shadow(0 0 12px ${COR.volt})` }} />}
+          </svg>
+        );
+      })()}
+    </>
+  );
+};
+
+// ===================== P2 · abertura com o respiro: a notificação é lida antes da voz (18,45 a 21,40 s na régua do FILME) =====================
+const P2abre: React.FC<{ f: number }> = ({ f }) => {
+  const t = t_(f);
+  const zJ = trilha(f, [[18.45, 1.0], [21.4, 1.04, E.ioC]]);
+  const a = sobe(f, 19.05, { s: 0.5, cy: 1880 }, CEL.des2, 6);
+  const notifY = mix(-260, 121.1, mola(f, 19.95, 0.75, 12));
+  const brilho = t > 20.3 ? 0.18 + 0.1 * (0.5 - 0.5 * Math.cos((2 * Math.PI * (t - 20.3)) / 0.9677)) : 0.18; // respira em meio compasso enquanto espera a voz
+  return (
+    <>
+      {cheia("juntos", zJ, 1, 6 * prog(f, 18.45, 19.5))}
+      <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: 0.5 * prog(f, 19.05, 19.5) }} />
+      {t < 19.35 && (
+        <>
+          <Sombra y={650} h={700} op={prog(f, 18.45, 18.6) * (1 - prog(f, 19.05, 19.3))} />
+          <Sticker p="sticker_juntos" x={102} y={840} t={t - 18.48} op={1 - prog(f, 19.05, 19.3)} />
+        </>
+      )}
+      {t >= 19.05 && (
+        <Celular c={a.c} tilt={a.tilt} sobre={
+          <>
+            <img src={staticFile("v9/figma/notificacao.png")} style={{ ...ABS, left: 42.2, top: notifY, width: 896.9, height: 213.4, filter: `drop-shadow(0 18px 30px rgba(0,0,0,${brilho}))` }} />
+            <Toque cx={855} cy={345} t={t - (C.toque + S)} />
+          </>
+        }>
+          <Peca nome="juntos" y={349} />
+        </Celular>
+      )}
+    </>
+  );
+};
+
+// ===================== B10 · descoberta do André e do Caio (régua do roteiro: 37,35 a 41,90 s) =====================
+const ATL = { x: 40.7, y: 49.5, w: 821.9, h: 649.4 }; // região dos cartões na peça "atletas"
+const ATL_FORA = { x: 76, y: 330, w: 929, h: 734 };
+const CARD_A = { x: 56.4, y: 179.2, w: 403, h: 532.5 };
+const CARD_C = { x: 445, y: 175, w: 403, h: 532.5 };
+const A_FORA = { x: 150, y: 369, w: 479, h: 633 };
+const C_FORA = { x: 458, y: 420, w: 479, h: 633 };
+const kAtl = ATL_FORA.w / ATL.w;
+const noRecorte = (c: Ret): Ret => ({ x: ATL_FORA.x + (c.x - ATL.x) * kAtl, y: ATL_FORA.y + (c.y - ATL.y) * kAtl, w: c.w * kAtl, h: c.h * kAtl });
+const Recorte: React.FC<{ reg: Ret; r: Ret; rot?: number; op?: number; raio?: number; children?: React.ReactNode }> = ({ reg, r, rot = 0, op = 1, raio = 28, children }) => {
+  const k = r.w / reg.w;
+  return (
+    <div style={{ ...ABS, left: r.x, top: r.y, width: r.w, height: r.h, borderRadius: raio, overflow: "hidden", opacity: op, transform: `rotate(${rot}deg)`, boxShadow: "0 24px 60px rgba(0,0,0,0.45)" }}>
+      <img src={staticFile("v9/figma/atletas.png")} style={{ ...ABS, left: -reg.x * k, top: -reg.y * k, width: 975 * k, maxWidth: "none" }} />
+      {children}
+    </div>
+  );
+};
+const Seguindo: React.FC<{ x: number; y: number; w: number; h: number; esc: number; op?: number }> = ({ x, y, w, h, esc, op = 1 }) => (
+  <div style={{ ...ABS, left: x, top: y, width: w, height: h, borderRadius: h / 2, background: "#fff", border: `${4.5 * esc}px solid ${COR.tinta}`, boxSizing: "border-box", opacity: op, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: INTER, fontWeight: 600, fontSize: 38.4 * esc, color: COR.tinta, whiteSpace: "pre" }}>
+    {"✓  Seguindo"}
+  </div>
+);
+const Desc: React.FC<{ f: number }> = ({ f }) => {
+  const t = t_(f);
+  const cel = mixCel(CEL.cui, CEL.post, E.ioC(prog(f, 37.35, 37.65)));
+  const scroll = trilha(f, [[37.35, 0], [37.65, 977, E.ioC], [41.0, 977], [41.4, 1735, E.ioC]]);
+  const zP = trilha(f, [[33.6, 1.04], [37.8, 1.05, E.lin]]);
+  const escuro = 0.95 * (prog(f, 37.4, 37.7) - prog(f, 41.0, 41.45));
+  const ext = E.ioC(prog(f, 37.4, 37.75));
+  const origem = naTela(cel, { x: ATL.x, y: 1220 - scroll + ATL.y, w: ATL.w, h: ATL.h });
+  const rAtl = mixRet(origem, ATL_FORA, ext);
+  const kR = rAtl.w / ATL_FORA.w;
+  const dividiu = t >= P.acharam;
+  const atra = mola(f, P.acharam, 0.7, 7);
+  const pousa = E.ioC(prog(f, 41.0, 41.45));
+  const ninho = naTela(cel, { x: 48, y: 1978 - scroll + 20, w: 70, h: 92 });
+  const recua = 1 - 0.03 * E.ioC(prog(f, P.acharam, P.acharam + 1.2)) + 0.03 * pousa;
+  const rA = mixRet(mixRet(noRecorte(CARD_A), A_FORA, atra), ninho, pousa);
+  const rC = mixRet(mixRet(noRecorte(CARD_C), C_FORA, atra), ninho, pousa);
+  const arco = 40 * Math.sin(Math.PI * cl(atra));
+  const caioApagado = prog(f, P.andre, P.andre + 0.2) * (1 - prog(f, P.caio, P.caio + 0.15));
+  const anelAndre = prog(f, P.andre, P.andre + 0.35) * (1 - prog(f, P.caio, P.caio + 0.2));
+  const segue = prog(f, P.caio + 0.12, P.caio + 0.3);
+  const marcas = prog(f, P.pelo, P.pelo + 0.14);
+  const u = cl(atra);
+  return (
+    <>
+      {cheia("parque", zP, 1 - prog(f, 37.7, 38.0), 6)}
+      <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: mix(0.45, 1, prog(f, 37.7, 38.0)) }} />
+      <Celular c={cel}>
+        <Peca nome="lucasvivo" y={243.5 - scroll} />
+        <Peca nome="atletas" y={1220 - scroll} />
+        <Peca nome="duo" y={1978 - scroll} />
+        <div style={{ ...ABS, left: 733.7, top: 399 + 1735 - scroll, width: 128, height: 62, background: COR.volt, opacity: 0.45 * marcas, mixBlendMode: "multiply" }} />
+        <div style={{ ...ABS, left: 44.2, top: 459 + 1735 - scroll, width: 80, height: 62, background: COR.volt, opacity: 0.45 * marcas, mixBlendMode: "multiply" }} />
+      </Celular>
+      <div style={{ ...ABS, inset: 0, background: COR.tinta, opacity: escuro }} />
+      <div style={{ ...ABS, inset: 0, transform: `scale(${recua})`, transformOrigin: "540px 700px" }}>
+        {t >= 37.4 && t < P.acharam + 0.2 && (
+          <Recorte reg={ATL} r={rAtl} raio={mix(0, 28, ext)} op={dividiu ? 1 - prog(f, P.acharam, P.acharam + 0.2) : 1}>
+            <div style={{ ...ABS, transform: `scale(${kR})`, transformOrigin: "0 0", width: 929, height: 734 }}>
+              <div style={{ ...ABS, left: 804, top: 9, width: 124, height: 90, background: "#fff" }} />
+              {caioApagado > 0 && <div style={{ ...ABS, left: 479, top: 115, width: 438, height: 603, background: "#fff", opacity: 0.45 * caioApagado }} />}
+              {anelAndre > 0 && (
+                <svg width={929} height={734} style={{ ...ABS, left: 0, top: 0 }}>
+                  <circle cx={230} cy={273} r={114} fill="none" stroke={COR.volt} strokeWidth={6} pathLength={1} strokeDasharray="1 1" strokeDashoffset={1 - anelAndre} transform="rotate(-90 230 273)" />
+                </svg>
+              )}
+              {segue > 0 && <Seguindo x={518} y={590} w={360} h={89} esc={1} op={segue} />}
+              {t >= P.caio - 0.1 && t < P.caio + 0.6 && <Toque cx={833.5} cy={645.5} t={t - P.caio} />}
+            </div>
+          </Recorte>
+        )}
+        {dividiu && pousa < 1 && (
+          <>
+            <Recorte reg={CARD_A} r={{ ...rA, y: rA.y - arco }} rot={-3 * u * (1 - pousa)} op={1 - prog(f, 41.3, 41.45)} />
+            <Recorte reg={CARD_C} r={{ ...rC, y: rC.y - arco * 0.6 }} rot={3 * u * (1 - pousa)} op={1 - prog(f, 41.3, 41.45)}>
+              <Seguindo x={mix(61 / 455.5, 42 / 479, u) * rC.w} y={mix(448.2 / 601.9, 476 / 633, u) * rC.h} w={mix(360 / 455.5, 366 / 479, u) * rC.w} h={mix(89 / 601.9, 114 / 633, u) * rC.h} esc={rC.w / 479} />
+            </Recorte>
+          </>
+        )}
+      </div>
+    </>
+  );
 };

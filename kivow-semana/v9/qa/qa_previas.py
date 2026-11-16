@@ -9,12 +9,29 @@ import numpy as np, soundfile as sf
 
 OUT = "entregas/v9.2"; os.makedirs(OUT, exist_ok=True)
 PREV = json.load(open("v9/qa/previas.json"))
-sh = lambda *a: subprocess.run(a, capture_output=True, text=True)
+_sel = [x for x in os.environ.get("SEL", "").split(",") if x]
+PREV = [p for p in PREV if (p["id"] in _sel) if _sel] or [p for p in PREV if p["id"] != "FILME"]
+def sh(*a, opcional=False):
+    """roda um comando; falha de comando obrigatório interrompe o QA com a mensagem do próprio ffmpeg"""
+    r = subprocess.run(a, capture_output=True, text=True)
+    if r.returncode != 0 and not opcional:
+        sys.exit(f"ERRO em {' '.join(a[:6])}...: {r.stderr[-800:]}")
+    return r
+def exige(path, min_kb=1):
+    if not os.path.exists(path) or os.path.getsize(path) < min_kb * 1024: sys.exit(f"ERRO: arquivo ausente ou vazio: {path}")
+def quadros(path):
+    r = sh("ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", path)
+    return int(r.stdout.strip())
 def ebur(path, extra=""):
     r = sh("ffmpeg", "-hide_banner", "-nostats", "-i", path, "-af", f"{extra}ebur128=peak=true", "-f", "null", "-").stderr
     g = lambda pat: float(re.findall(pat, r)[-1])
     return {"I": g(r"I:\s+(-?[\d.]+) LUFS"), "TP": g(r"Peak:\s+(-?[\d.]+) dBFS"), "LRA": g(r"LRA:\s+(-?[\d.]+) LU")}
 
+# ---------- 0. o render existe e tem os quadros pedidos ----------
+for p in PREV:
+    exige(f"out/{p['id']}.mp4", 100)
+    n = quadros(f"out/{p['id']}.mp4")
+    if n != p["q1"] - p["q0"] + 1: sys.exit(f"ERRO: {p['id']} tem {n} quadros, esperado {p['q1'] - p['q0'] + 1}")
 # ---------- 1. master ----------
 for p in PREV: sh("ffmpeg", "-y", "-loglevel", "error", "-i", f"out/{p['id']}.mp4", "-vn", "-ac", "2", "-ar", "48000", f"out/{p['id']}.wav")
 sh("ffmpeg", "-y", "-loglevel", "error", *sum([["-i", f"out/{p['id']}.wav"] for p in PREV], []), "-filter_complex",
@@ -25,6 +42,7 @@ for p in PREV:
     i = p["id"]
     sh("ffmpeg", "-y", "-loglevel", "error", "-i", f"out/{i}.mp4", "-af", f"volume={ganho:.2f}dB,alimiter=limit=0.83:attack=1:release=60:level=disabled",
        "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", f"{OUT}/kivow_v9.2_{i}.mp4")
+    exige(f"{OUT}/kivow_v9.2_{i}.mp4", 100)
     sh("ffmpeg", "-y", "-loglevel", "error", "-i", f"{OUT}/kivow_v9.2_{i}.mp4", "-vn", "-ac", "2", "-ar", "48000", f"out/{i}_m.wav")
     m = ebur(f"out/{i}_m.wav"); mono = ebur(f"out/{i}_m.wav", "pan=mono|c0=0.5*c0+0.5*c1,")
     x, sr = sf.read(f"out/{i}_m.wav")
@@ -48,7 +66,7 @@ for p in PREV:
         sos = butter(4, [300, 7000], btype="band", fs=48000, output="sos")
         stoi_cel = round(float(STOI(voz, sosfilt(sos, mix), 48000, extended=False)), 3)
     rel["previas"][i] = {"janela_s": [a, b], "LUFS_I": m["I"], "pico_real_dBTP": m["TP"], "LRA": m["LRA"], "amostras_clipadas": clip,
-                         "mono_LUFS": mono["I"], "perda_na_soma_mono_dB": round(m["I"] - mono["I"], 2), "correlacao_LR": round(corr, 3),
+                         "mono_LUFS": mono["I"], "perda_na_soma_mono_dB": round(m["I"] - mono["I"] - 3.01, 2), "correlacao_LR": round(corr, 3),
                          "STOI_voz_no_mix": stoi, "STOI_alto_falante_celular": stoi_cel}
 
 # ---------- 3. movimento: diferença entre quadros ----------
@@ -59,7 +77,9 @@ for p in PREV:
     d = np.abs(np.diff(fr, axis=0)).mean((1, 2))
     med = np.convolve(d, np.ones(9) / 9, "same")
     picos = [(int(k + 1), round(float(d[k]), 2), round(float(med[k]), 2)) for k in range(len(d)) if d[k] > 6 and d[k] > 3.5 * max(med[k], 0.5)]
-    parado = d < 0.15; maior = cur = 0
+    parado = d < 0.15
+    for a, b in p.get("pausas_declaradas", []): parado[max(0, a - p["q0"]):max(0, b - p["q0"])] = False  # descanso de propósito (ex.: CTA)
+    maior = cur = 0
     for v in parado: cur = cur + 1 if v else 0; maior = max(maior, cur)
     rel["previas"][i].update({"saltos_isolados": [{"quadro_da_previa": a, "dif": b, "media_local": c} for a, b, c in picos][:12],
                               "maior_pausa_s": round(maior / 60, 2), "dif_media": round(float(d.mean()), 2), "dif_p95": round(float(np.percentile(d, 95)), 2)})
@@ -73,10 +93,38 @@ for p in PREV:
     for chk in p.get("leitura", []):
         img = f"out/ocr_{p['id']}_{chk['q']}.png"
         sh("ffmpeg", "-y", "-loglevel", "error", "-i", f"out/{p['id']}.mp4", "-vf", f"select=eq(n\\,{chk['q'] - p['q0']}),scale=360:450", "-frames:v", "1", img)
-        txt = pytesseract.image_to_string(Image.open(img).resize((1080, 1350), Image.LANCZOS), lang="por")
+        from PIL import ImageOps
+        g = ImageOps.autocontrast(Image.open(img).convert("L"))
+        if sum(g.getdata()) / (g.size[0] * g.size[1]) < 128: g = ImageOps.invert(g)  # texto claro em fundo escuro
+        g = g.resize((1080, 1350), Image.LANCZOS)
+        txt = pytesseract.image_to_string(g, lang="por") + " " + pytesseract.image_to_string(g.point(lambda v: 255 if v > 150 else 0), lang="por", config="--psm 11")
         norm = lambda s: re.sub(r"[^A-Z0-9:]", "", s.upper().replace("Ã", "A").replace("Á", "A").replace("É", "E"))
         rel["previas"][p["id"]].setdefault("leitura_360", []).append({"quadro": chk["q"], "esperado": chk["txt"], "leu": norm(chk["txt"]) in norm(txt)})
 
+# ---------- 6. critérios de aprovação (o job REPROVA se algum estourar; relatório e vídeos saem mesmo assim) ----------
+sh("ffmpeg", "-y", "-loglevel", "error", *sum([["-i", f"out/{p['id']}_m.wav"] for p in PREV], []), "-filter_complex",
+   "".join(f"[{i}:a]" for i in range(len(PREV))) + f"concat=n={len(PREV)}:v=0:a=1[a]", "-map", "[a]", "out/todas_m.wav")
+depois = ebur("out/todas_m.wav"); rel["master"]["lufs_conjunto_depois"] = depois["I"]
+falhas = []
+def crit(nome, ok, valor):
+    rel.setdefault("criterios", []).append({"criterio": nome, "ok": bool(ok), "valor": valor})
+    if not ok: falhas.append(f"{nome}: {valor}")
+crit("conjunto a -14 LUFS (±1)", abs(depois["I"] + 14) <= 1, depois["I"])
+for p in PREV:
+    v = rel["previas"][p["id"]]; i = p["id"]
+    cortes = p.get("cortes", [])
+    saltos = [s for s in v["saltos_isolados"] if not any(abs(s["quadro_da_previa"] - (c - p["q0"])) <= 2 for c in cortes)]
+    crit(f"{i} pico real <= -1,0 dBTP", v["pico_real_dBTP"] <= -1.0, v["pico_real_dBTP"])
+    crit(f"{i} zero amostras clipadas", v["amostras_clipadas"] == 0, v["amostras_clipadas"])
+    crit(f"{i} soma mono perde <= 1,5 LU", v["perda_na_soma_mono_dB"] <= 1.5, v["perda_na_soma_mono_dB"])
+    crit(f"{i} correlação L/R >= 0,3", v["correlacao_LR"] >= 0.3, v["correlacao_LR"])
+    if v["STOI_voz_no_mix"] is not None:
+        crit(f"{i} STOI no mix >= 0,85", v["STOI_voz_no_mix"] >= 0.85, v["STOI_voz_no_mix"])
+        crit(f"{i} STOI no alto-falante de celular >= 0,80", v["STOI_alto_falante_celular"] >= 0.80, v["STOI_alto_falante_celular"])
+    crit(f"{i} sem saltos fora dos cortes declarados", not saltos, [s["quadro_da_previa"] for s in saltos])
+    crit(f"{i} nenhuma pausa > 1,5 s", v["maior_pausa_s"] <= 1.5, v["maior_pausa_s"])
+    for c in v.get("leitura_360", []): crit(f"{i} lê \"{c['esperado']}\" a 360 px (q {c['quadro']})", c["leu"], c["leu"])
+rel["aprovado"] = not falhas
 json.dump(rel, open(f"{OUT}/qa.json", "w"), indent=1, ensure_ascii=False)
 with open(f"{OUT}/qa.md", "w") as f:
     f.write(f"# QA medido · prévias v9.2\n\nMaster: conjunto a {antes['I']} LUFS antes; ganho único de {ganho:+.2f} dB e limitador de pico real.\n\n")
@@ -86,4 +134,8 @@ with open(f"{OUT}/qa.md", "w") as f:
     f.write("\nLeitura a 360 px (OCR):\n")
     for k, v in rel["previas"].items():
         for c in v.get("leitura_360", []): f.write(f"- {k} q{c['quadro']}: \"{c['esperado']}\" {'lido' if c['leu'] else 'NÃO lido'}\n")
+    situacao = "APROVADO" if not falhas else f"REPROVADO: {len(falhas)} falha(s)"
+    f.write(f"\n## Critérios ({situacao})\n")
+    for c in rel["criterios"]: f.write(f"- {'OK' if c['ok'] else 'FALHOU'} · {c['criterio']} · {c['valor']}\n")
 print(open(f"{OUT}/qa.md").read())
+if falhas: sys.exit("QA REPROVADO:\n" + "\n".join(falhas))

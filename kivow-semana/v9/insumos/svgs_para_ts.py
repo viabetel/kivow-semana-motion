@@ -5,7 +5,7 @@ import re, html, json, os, base64, hashlib, unicodedata
 BASE = os.path.dirname(os.path.abspath(__file__)) + "/../.."
 FIG, IMG = f"{BASE}/public/v9/figma", f"{BASE}/public/v9/svg"
 os.makedirs(IMG, exist_ok=True)
-PECAS = ["sticker_pista", "sticker_orla", "sticker_parque", "sticker_dupla", "sticker_juntos", "trecho", "ranking", "cuida", "out03", "out04"]
+PECAS = ["sticker_pista", "sticker_orla", "sticker_parque", "sticker_dupla", "sticker_juntos", "trecho", "ranking", "ranking4", "cuida", "out03", "out04"]
 
 def nome_limpo(s):
     s = html.unescape(s)
@@ -34,6 +34,8 @@ for p in PECAS:
     s = re.sub(r'(<path [^>]*stroke="[^"]+"[^>]*?)(/?>)', lambda m: m.group(1) + ' pathLength="1"' + m.group(2) if "pathLength" not in m.group(1) else m.group(0), s)
     # vidro do ranking: o desfoque de fundo vira CSS no componente (foreignObject não desfoca o que está fora do SVG)
     s = re.sub(r"<foreignObject.*?</foreignObject>", "", s, flags=re.S)
+    # o fundo do frame do Figma não pode tapar a foto nem o mapa por baixo (fecho)
+    if p in ("out03", "out04"): s = s.replace('<rect width="1080" height="1350" fill="#111418"/>', "", 1)
     w, h = re.search(r'<svg width="([\d.]+)" height="([\d.]+)"', s).groups()
     saida.append(f"  {p}: {{ w: {w}, h: {h}, svg: {json.dumps(s)} }},")
     ids_por_peca[p] = sorted(set(mapa.values()))
