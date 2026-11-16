@@ -1,0 +1,27 @@
+{
+ "pista": {
+  "w": 1280,
+  "h": 1600,
+  "perto_medio": 0.283
+ },
+ "orla": {
+  "w": 1600,
+  "h": 1065,
+  "perto_medio": 0.212
+ },
+ "parque": {
+  "w": 1600,
+  "h": 1066,
+  "perto_medio": 0.339
+ },
+ "dupla": {
+  "w": 1600,
+  "h": 1066,
+  "perto_medio": 0.313
+ },
+ "juntos": {
+  "w": 1600,
+  "h": 900,
+  "perto_medio": 0.286
+ }
+}

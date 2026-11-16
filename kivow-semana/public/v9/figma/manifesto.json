@@ -1,0 +1,132 @@
+{
+ "topo": {
+  "id": "613:1080",
+  "fmt": "png",
+  "kb": 18
+ },
+ "abas": {
+  "id": "613:1199",
+  "fmt": "png",
+  "kb": 20
+ },
+ "checkins": {
+  "id": "613:952",
+  "fmt": "png",
+  "kb": 390
+ },
+ "marcos": {
+  "id": "613:953",
+  "fmt": "png",
+  "kb": 625
+ },
+ "bruno": {
+  "id": "613:954",
+  "fmt": "png",
+  "kb": 48
+ },
+ "rafael": {
+  "id": "613:955",
+  "fmt": "png",
+  "kb": 54
+ },
+ "marcosR": {
+  "id": "613:956",
+  "fmt": "png",
+  "kb": 50
+ },
+ "diego": {
+  "id": "613:958",
+  "fmt": "png",
+  "kb": 553
+ },
+ "lucasvivo": {
+  "id": "642:627",
+  "fmt": "png",
+  "kb": 180
+ },
+ "atletas": {
+  "id": "613:960",
+  "fmt": "png",
+  "kb": 263
+ },
+ "duo": {
+  "id": "613:961",
+  "fmt": "png",
+  "kb": 1323
+ },
+ "juntos": {
+  "id": "613:1318",
+  "fmt": "png",
+  "kb": 1341
+ },
+ "cartao_branco": {
+  "id": "619:972",
+  "fmt": "png",
+  "kb": 123
+ },
+ "cartao_aceso": {
+  "id": "619:1035",
+  "fmt": "png",
+  "kb": 144
+ },
+ "notificacao": {
+  "id": "638:182",
+  "fmt": "png",
+  "kb": 55
+ },
+ "assinatura": {
+  "id": "616:957",
+  "fmt": "png",
+  "kb": 13
+ },
+ "foto_sem_cartao": {
+  "id": "623:65",
+  "fmt": "png",
+  "kb": 2565
+ },
+ "sticker_pista": {
+  "id": "I629:63;407:513",
+  "fmt": "svg",
+  "kb": 27
+ },
+ "sticker_orla": {
+  "id": "I639:158;407:513",
+  "fmt": "svg",
+  "kb": 40
+ },
+ "sticker_parque": {
+  "id": "I643:307;407:513",
+  "fmt": "svg",
+  "kb": 23
+ },
+ "sticker_dupla": {
+  "id": "I644:427;407:513",
+  "fmt": "svg",
+  "kb": 39
+ },
+ "trecho": {
+  "id": "634:351",
+  "fmt": "svg",
+  "kb": 1310
+ },
+ "ranking": {
+  "id": "639:241",
+  "fmt": "svg",
+  "kb": 1383
+ },
+ "cuida": {
+  "id": "640:351",
+  "fmt": "svg",
+  "kb": 127
+ },
+ "out03": {
+  "id": "644:585",
+  "fmt": "svg",
+  "kb": 67
+ },
+ "out04": {
+  "id": "644:641",
+  "fmt": "svg",
+  "kb": 116
+ }
+}

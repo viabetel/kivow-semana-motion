@@ -1,0 +1,58 @@
+name: Kivow v9 insumos (medição da trilha, profundidade e sons)
+
+on:
+  workflow_dispatch:
+    inputs:
+      etapas:
+        description: "audio,profundidade,sons"
+        required: true
+        default: "audio,profundidade,sons"
+      trilha_inicio:
+        description: "início da trilha no arquivo (s); vazio = escolhe pelo drop"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  insumos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: kivow-semana
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: ffmpeg e bibliotecas
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          pip install -q numpy scipy soundfile matplotlib librosa==0.10.2.post1 pillow
+      - name: Medir trilha e voz
+        if: contains(inputs.etapas, 'audio')
+        run: python v9/insumos/medir_audio.py
+      - name: Mapas de profundidade
+        if: contains(inputs.etapas, 'profundidade')
+        run: |
+          pip install -q torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -q transformers
+          python v9/insumos/profundidade.py
+      - name: Sons originais
+        if: contains(inputs.etapas, 'sons')
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          TRILHA_INICIO: ${{ inputs.trilha_inicio }}
+        run: |
+          [ -z "$TRILHA_INICIO" ] && unset TRILHA_INICIO
+          python v9/insumos/sons.py
+      - name: Commit dos insumos
+        working-directory: .
+        run: |
+          git config user.name "render-nuvem"
+          git config user.email "render-nuvem@users.noreply.github.com"
+          git add kivow-semana/v9/insumos/medidas kivow-semana/public/v9 || true
+          git commit -m "Kivow v9.2: insumos medidos na nuvem (${{ inputs.etapas }})" || echo "nada novo"
+          git pull --rebase -q && git push

@@ -1,0 +1,58 @@
+name: Kivow v9 prévias (render + master + QA medido)
+
+on:
+  workflow_dispatch:
+    inputs:
+      previas:
+        description: "quais (ids de v9/qa/previas.json, separados por vírgula; vazio = todas)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+jobs:
+  previas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: kivow-semana
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: ffmpeg, tesseract e bibliotecas
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg tesseract-ocr tesseract-ocr-por
+          pip install -q numpy scipy soundfile pystoi pytesseract pillow
+      - run: npm install --no-audit --no-fund
+      - run: npx tsc
+      - run: npx remotion browser ensure
+      - name: Render das prévias (trechos da composição mestre)
+        run: |
+          mkdir -p out
+          python - <<'PY'
+          import json, subprocess, os
+          sel = [s for s in os.environ.get("SEL", "").split(",") if s]
+          for p in json.load(open("v9/qa/previas.json")):
+              if sel and p["id"] not in sel: continue
+              subprocess.run(["npx", "remotion", "render", "src/index.ts", "SemanaV9", f"out/{p['id']}.mp4", f"--frames={p['q0']}-{p['q1']}",
+                              "--crf=16", "--color-space=bt709", "--concurrency=2", "--log=error"], check=True)
+          PY
+        env:
+          SEL: ${{ inputs.previas }}
+      - name: Master e QA medido
+        run: python v9/qa/qa_previas.py
+      - name: Commit da entrega
+        working-directory: .
+        run: |
+          git config user.name "render-nuvem"
+          git config user.email "render-nuvem@users.noreply.github.com"
+          git add kivow-semana/entregas/v9.2/
+          git commit -m "Entrega: Kivow Semana nova v9.2, prévias + QA medido (GitHub Actions)" || echo "nada novo"
+          git pull --rebase -q && git push

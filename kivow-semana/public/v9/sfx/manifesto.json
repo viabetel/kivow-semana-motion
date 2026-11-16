@@ -1,0 +1,261 @@
+{
+ "tom": "A menor",
+ "arquivos": {
+  "k_toque": {
+   "dur_s": 0.6,
+   "grupo": "UI",
+   "nota": "110.0 Hz"
+  },
+  "k_toque_resolvido": {
+   "dur_s": 2.4,
+   "grupo": "UI",
+   "nota": "tríade maior da tônica"
+  },
+  "dado_1": {
+   "dur_s": 0.6,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "dado_2": {
+   "dur_s": 0.6,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "dado_3": {
+   "dur_s": 0.6,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "pop_descolar": {
+   "dur_s": 0.25,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "encaixe": {
+   "dur_s": 0.218,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "deslize_vidro": {
+   "dur_s": 0.5,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "deslize_lateral": {
+   "dur_s": 0.32,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "toque": {
+   "dur_s": 0.3,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "notificacao": {
+   "dur_s": 0.81,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "mensagem_1": {
+   "dur_s": 0.37,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "mensagem_2": {
+   "dur_s": 0.37,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "mensagem_3": {
+   "dur_s": 0.37,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "conexao": {
+   "dur_s": 2.6,
+   "grupo": "UI",
+   "nota": "encontro em 1,30 s"
+  },
+  "bumbo_ref": {
+   "dur_s": 0.8,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "brilho_dono": {
+   "dur_s": 0.8,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "tique": {
+   "dur_s": 0.08,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "perseguicao": {
+   "dur_s": 0.36,
+   "grupo": "UI",
+   "nota": "4 semicolcheias, termina seco em 0,36 s"
+  },
+  "impacto_12s": {
+   "dur_s": 1.2,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "portal_succao": {
+   "dur_s": 0.4,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "portal_impacto": {
+   "dur_s": 1.0,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "traco": {
+   "dur_s": 1.8,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "km_tiques": {
+   "dur_s": 0.54,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "mergulho": {
+   "dur_s": 0.75,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "mergulho_abertura": {
+   "dur_s": 2.35,
+   "grupo": "IM",
+   "nota": "whoosh + abertura harmônica"
+  },
+  "varrida_filtro": {
+   "dur_s": 0.7,
+   "grupo": "IM",
+   "nota": ""
+  },
+  "placa": {
+   "dur_s": 0.25,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "folha_sobe": {
+   "dur_s": 0.45,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "folha_desce": {
+   "dur_s": 0.4,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "sos_pulso": {
+   "dur_s": 3.0,
+   "grupo": "UI",
+   "nota": "3,00 s exatos"
+  },
+  "sos_sinal_1": {
+   "dur_s": 0.45,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "sos_sinal_2": {
+   "dur_s": 0.45,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "sos_sinal_3": {
+   "dur_s": 0.45,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "sos_alivio": {
+   "dur_s": 1.8,
+   "grupo": "UI",
+   "nota": "alívio, maior"
+  },
+  "contato_tique": {
+   "dur_s": 0.13,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "ao_vivo": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "rota_pista": {
+   "dur_s": 0.6,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "rota_orla": {
+   "dur_s": 0.7,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "rota_parque": {
+   "dur_s": 0.7,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "rota_estadio": {
+   "dur_s": 1.8,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "assinatura_kivow": {
+   "dur_s": 2.6,
+   "grupo": "IM",
+   "nota": "quatro rotas + toque do K, maior, 1,2 s + cauda"
+  },
+  "alfabeto_1": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "alfabeto_2": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "alfabeto_3": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "alfabeto_4": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "alfabeto_5": {
+   "dur_s": 0.12,
+   "grupo": "UI",
+   "nota": ""
+  },
+  "am_pista": {
+   "dur_s": 6.0,
+   "grupo": "AM",
+   "nota": "ElevenLabs SFX (créditos antes 3570, depois 3570)"
+  },
+  "am_orla": {
+   "dur_s": 6.0,
+   "grupo": "AM",
+   "nota": "ElevenLabs SFX (créditos antes 3570, depois 3570)"
+  },
+  "am_parque": {
+   "dur_s": 6.0,
+   "grupo": "AM",
+   "nota": "ElevenLabs SFX (créditos antes 3570, depois 3570)"
+  },
+  "am_dupla": {
+   "dur_s": 5.0,
+   "grupo": "AM",
+   "nota": "ElevenLabs SFX (créditos antes 3570, depois 3570)"
+  }
+ },
+ "trilha_inicio_arquivo_s": 14.7744
+}
